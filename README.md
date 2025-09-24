@@ -40,7 +40,7 @@
 ### **Quick Start**
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/MachineSpiritJazzCafe/cuda-learning-journey
 
 # Navigate to current project
 cd cuda-learning-journey/01-vector-addition
