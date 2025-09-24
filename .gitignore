@@ -1,0 +1,33 @@
+# CUDA Executables
+*.exe
+*.out
+
+# Object files
+*.o
+*.obj
+*.cu.o
+
+# Profiling files
+*.nvprof
+*.qdrep
+*.qdstrm
+profile_*
+
+
+# Nsight files
+*.nsight-cuproj
+Report*
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and output
+*.log
+output_*
+benchmark_*
