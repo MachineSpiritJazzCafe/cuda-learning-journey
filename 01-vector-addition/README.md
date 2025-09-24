@@ -18,6 +18,5 @@
 
 **Compile & Run:**
 ```bash
-nvcc -D WSL_BUILD -I.. v1-basic.cu -o v1-basic
-./v1-basic
+make help (for build, test and clean)
 ```

@@ -46,11 +46,13 @@ git clone https://github.com/MachineSpiritJazzCafe/cuda-learning-journey
 cd cuda-learning-journey/01-vector-addition
 
 # Build and test (WSL2 compatible)
-make <kernel.cu>
-eg. make v1-basic
+make (build all kernels)
+make <specific kernel>
 
 # Run benchmarks
-make test
+make test (for all targets)
+make test-<kernel>
+
 make clean
 ```
 
