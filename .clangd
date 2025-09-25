@@ -1,0 +1,37 @@
+CompileFlags:
+  Add:
+    # CUDA configuration
+    - "--cuda-path=/usr/local/cuda"
+    - "-I/usr/local/cuda/include"
+    - "-xcuda"
+    - "--std=c++17"
+
+    # Project include directories
+    - "-I../.."                    # Project root
+    - "-I../../utils"              # Utility headers
+    - "-I./01-vector-addition"
+    - "-I./02-matrix-operations"
+    - "-I./03-reduction-patterns"
+    - "-I./04-shared-memory"
+    - "-I./05-streams-async"
+    
+    # CUDA preprocessing definitions
+    - "-D__CUDACC__"
+    - "-D__NVCC__"
+    - "-D__CUDA_ARCH__=750"    # RTX 2070 Super
+
+    # Compiler options
+    - "-ferror-limit=0"        # Show all errors
+    - "-Wno-unknown-cuda-version"
+
+  Remove:
+    # Remove nvcc-specific flags that clang doesn't understand
+    # --! I actually don't know many of these this is a template, lol !--
+    - "-gencode*"
+    - "--generate-code*" 
+    - "-ccbin*"
+    - "--compiler-options*"
+    - "--expt-extended-lambda"
+    - "--expt-relaxed-constexpr"
+    - "-forward-unknown-to-host-compiler"
+    - "-Werror=cross-execution-space-call"
