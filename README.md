@@ -62,7 +62,7 @@ make clean
 cuda-learning-journey/
 ├── 📄 README.md                    # This file - project overview
 ├── 🛠️ utils/                       # Reusable CUDA utilities
-│   ├── cuda_utils.h                # Error checking, prefetch helpers
+│   ├── cuda_utils.cuh                # Error checking, prefetch helpers
 │   └── timer.h                     # Performance measurement (coming)
 ├── 📁 01-vector-addition/          # ✅ Current: Basic patterns
 ├── 📁 02-matrix-operations/        # 📋 Next: 2D indexing, tiling
@@ -77,8 +77,11 @@ cuda-learning-journey/
 ### **Phase 1: Fundamentals** ✅
 - [X] Thread indexing and stride patterns
 - [X] Memory management (unified memory)
-- [ ] Error handling and debugging
-
+- [X] Error handling and debugging
+- [ ] Mrmory-Constrained Processing:
+        - [X] Chunked vector Addition
+        - [ ] CUDA streams
+        - [ ] Async memory operations
 ### **Phase 2: Memory Optimization** 🔄
 - [ ] Memory coalescing patterns
 - [ ] Shared memory usage
