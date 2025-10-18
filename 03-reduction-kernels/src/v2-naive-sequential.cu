@@ -113,6 +113,7 @@ __global__ void reduce_in_place(float *input, int n){
 // ============================================================================
 
 int main() {
-    run_reduction_tests("v2: Global Memory + Sequential Addressing (No Modulo)", 256);
+    run_reduction_tests("v2: Global Memory + Sequential Addressing (No Modulo)",
+                        BLOCK_SIZE);
     return 0;
 }

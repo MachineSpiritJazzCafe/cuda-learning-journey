@@ -36,7 +36,7 @@ inline float naiveReduceGPU(float* d_input, int n, int blockSize) {
         printf("  Stage %d: %d elements → %d blocks\n", 
                stage, currentSize, numBlocks);
         
-        reduce_in_place<<<numBlocks, blockSize>>>(d_input, currentSize);
+        reduce_in_place<<<numBlocks, blockSize, blockSize * sizeof(float)>>>(d_input, currentSize);
         CUDA_CHECK(cudaGetLastError());
         CUDA_CHECK(cudaDeviceSynchronize());
         
@@ -46,7 +46,7 @@ inline float naiveReduceGPU(float* d_input, int n, int blockSize) {
     
     // Final reduction in one block
     printf("  Stage %d (final): %d elements → 1 block\n", stage, currentSize);
-    reduce_in_place<<<1, blockSize>>>(d_input, currentSize);
+    reduce_in_place<<<1, blockSize, blockSize * sizeof(float)>>>(d_input, currentSize);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
     
@@ -75,7 +75,7 @@ inline float naiveReduceHybrid(float* d_input, int n, int blockSize) {
     printf("  GPU stage: %d elements → %d blocks\n", n, numBlocks);
     
     // Single GPU reduction
-    reduce_in_place<<<numBlocks, blockSize>>>(d_input, n);
+    reduce_in_place<<<numBlocks, blockSize, blockSize * sizeof(float)>>>(d_input, n);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
     
