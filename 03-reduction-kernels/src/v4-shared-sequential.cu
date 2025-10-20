@@ -1,9 +1,8 @@
-#include "commons/helpers.cuh"
+  #include "commons/helpers.cuh"
 
-// v3: Shared Memory + Interleaved Addressing (V1 progression)
-// Lesson learned: Just adding shared memory doesn't magically improves metrics.
-// STILL HAS: Expensive modulo operation and branch divergence
-// Interleaved implementation causes bank conflicts in shared memory
+// v4: Shared Memory + Sequential Addressing
+// COMBINES: Fast shared memory (v3) + No modulo (v2)
+// KEY INSIGHT: Still seeing bank conflicts!
 __global__ void reduce_in_place(float* g_input, int n) {
     
     // Shared memory: ~5 cycle latency vs ~400-800 for global memory
@@ -15,28 +14,23 @@ __global__ void reduce_in_place(float* g_input, int n) {
     // ========================================================================
     // STEP 1: Load from GLOBAL to SHARED (with boundary check)
     // ========================================================================
-    // This is the ONLY global memory access during reduction!
-    // After this, everything happens in fast shared memory
-    
     sdata[tid] = 0.0f;  // Initialize (handles partial blocks)
     if (index < n) {
         sdata[tid] = g_input[index];
     }
-    __syncthreads();  // Ensure all threads have loaded their data
-    
-    
+    __syncthreads();  
+
     // ========================================================================
     // STEP 2: Tree-based reduction IN SHARED MEMORY
     // ========================================================================
-    // Same interleaved pattern as v1, but now operating on sdata[] not global
+    // KEY CHANGE FROM V3: Sequential addressing instead of interleaved
+    // V3: if (tid % (2*stride) == 0)  ← Expensive modulo + bank conflicts
+    // V4: if (tid < stride)           ← Cheap comparison + fewer bank conflicts
     
-    for (unsigned int stride = 1; stride < blockDim.x; stride *= 2) {
+    for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         __syncthreads();
 
-        // INTERLEAVED ADDRESSING (same as v1):
-        // Active threads: 0, 2, 4, 6, ... (scattered)
-        if (tid % (2 * stride) == 0 && tid + stride < blockDim.x) {
-            
+        if (tid < stride) {
             // Add element 'stride' away
             sdata[tid] += sdata[tid + stride];
         }
@@ -45,15 +39,13 @@ __global__ void reduce_in_place(float* g_input, int n) {
     // ========================================================================
     // STEP 3: Write result back to GLOBAL memory
     // ========================================================================
-    // Only thread 0 has the final sum in sdata[0]
-    
     if (tid == 0) {
         g_input[blockIdx.x] = sdata[0];
     }
 }
 
 int main() {
-    run_reduction_tests("v3: Shared Memory + Interleaved Addressing");
+    run_reduction_tests("v4: Shared Memory + Sequential Addressing)");
     return 0;
 }
 

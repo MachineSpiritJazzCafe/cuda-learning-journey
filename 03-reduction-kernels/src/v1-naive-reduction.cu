@@ -25,21 +25,6 @@ __global__ void reduce_in_place(float* input, int n) {
             
             // Pattern: Each active thread sums its element with one "stride" away
             input[index] += input[index + stride];
-            
-            // Visual example with stride = 1 (first iteration):
-            //   Thread 0: input[0] += input[1]   → input[0] = sum of [0,1]
-            //   Thread 2: input[2] += input[3]   → input[2] = sum of [2,3]
-            //   Thread 4: input[4] += input[5]   → input[4] = sum of [4,5]
-            //   (Threads 1,3,5,7 idle - condition fails)
-            
-            // Visual example with stride = 2 (second iteration):
-            //   Thread 0: input[0] += input[2]   → input[0] = sum of [0,1,2,3]
-            //   Thread 4: input[4] += input[6]   → input[4] = sum of [4,5,6,7]
-            //   (Threads 1,2,3,5,6,7 idle)
-            
-            // Final iteration (stride = 4):
-            //   Thread 0: input[0] += input[4]   → input[0] = sum of all 8
-            //   (All other threads idle)
         }
     }
     
@@ -52,9 +37,6 @@ __global__ void reduce_in_place(float* input, int n) {
         // Each block writes its result to the beginning of its section
         input[blockIdx.x] = input[blockIdx.x * blockDim.x];
     }
-    
-    // Note: After this kernel, first N_BLOCKS elements of input[] contain
-    // the partial sums. Need another kernel launch or CPU code to finish.
 }
 
 int main() {
