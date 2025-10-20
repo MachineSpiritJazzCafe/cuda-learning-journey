@@ -28,10 +28,11 @@ __global__ void reduce_in_place(float *input, int n){
             }
         }
     }       
-        // Write block's result to beginning of output array
-        if (tid == 0) {
-            input[blockIdx.x] = input[blockIdx.x * blockDim.x];
-        }
+    
+    // Write block's result to beginning of output array
+    if (tid == 0) {
+        input[blockIdx.x] = input[blockIdx.x * blockDim.x];
+    }
 }
 
 int main() {
