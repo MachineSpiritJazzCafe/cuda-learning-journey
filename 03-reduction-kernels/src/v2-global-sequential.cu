@@ -17,8 +17,7 @@ __global__ void reduce_in_place(float *input, int n){
     // ========================================================================
     
     for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        __syncthreads();
-
+        
         if (tid < stride) {
             unsigned int read_index = index + stride;
             
@@ -27,6 +26,8 @@ __global__ void reduce_in_place(float *input, int n){
                 input[index] += input[read_index];
             }
         }
+
+        __syncthreads();
     }       
     
     // Write block's result to beginning of output array

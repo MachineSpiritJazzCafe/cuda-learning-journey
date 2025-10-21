@@ -120,37 +120,24 @@ test-%: %
 	@echo "Testing $*..."
 	$(BUILD_DIR)/$*
 
-# Profile mode targets (single large test for clean NCU profiling)
-# =============================================================================
-
-# Run in profile mode (64M elements by default)
-profile-%: %
-	@echo "=== Profile Mode: $* ==="
-	PROFILE_MODE=1 $(BUILD_DIR)/$*
-
-# Run in profile mode with custom size (e.g., make profile-v4 PROFILE_SIZE=134217728)
-profile-size-%: %
-	@echo "=== Profile Mode: $* (size=$(PROFILE_SIZE)) ==="
-	PROFILE_MODE=1 PROFILE_SIZE=$(PROFILE_SIZE) $(BUILD_DIR)/$*
-
 # Profiling targets
 # =============================================================================
 
-# Full metrics collection for specific target (PROFILE MODE - single large test)
+# Full metrics collection for specific target
 metrics-%: % | $(PROFILE_DIR)
-	@echo "=== Full Metrics for $* (Profile Mode) ==="
-	PROFILE_MODE=1 ncu --metrics $(NCU_METRICS) $(BUILD_DIR)/$* | tee $(NCU_DIR)/$*-metrics.txt
+	@echo "=== Full Metrics for $* ==="
+	ncu --metrics $(NCU_METRICS) $(BUILD_DIR)/$* | tee $(NCU_DIR)/$*-metrics.txt
 
-# NCU profiling (saves detailed report) (PROFILE MODE)
+# NCU profiling (saves detailed report)
 profile-ncu-%: % | $(PROFILE_DIR)
-	@echo "=== NCU Profiling $* (Profile Mode) ==="
-	PROFILE_MODE=1 ncu --set full -o $(NCU_DIR)/$*-full $(BUILD_DIR)/$*
+	@echo "=== NCU Profiling $* ==="
+	ncu --set full -o $(NCU_DIR)/$*-full $(BUILD_DIR)/$*
 	@echo "Report saved to: $(NCU_DIR)/$*-full.ncu-rep"
 
-# NSys profiling (system-wide timeline) (PROFILE MODE)
+# NSys profiling (system-wide timeline)
 profile-nsys-%: % | $(PROFILE_DIR)
-	@echo "=== NSys Profiling $* (Profile Mode) ==="
-	PROFILE_MODE=1 nsys profile -o $(NSYS_DIR)/$* $(BUILD_DIR)/$*
+	@echo "=== NSys Profiling $* ==="
+	nsys profile -o $(NSYS_DIR)/$* $(BUILD_DIR)/$*
 	@echo "Report saved to: $(NSYS_DIR)/$*.nsys-rep"
 
 # Compare multiple targets (usage: make compare COMPARE_TARGETS="v1-basic v2-chunked")
@@ -160,14 +147,14 @@ compare:
 		exit 1; \
 	fi
 	@echo "========================================"
-	@echo "PERFORMANCE COMPARISON (Profile Mode)"
+	@echo "PERFORMANCE COMPARISON"
 	@echo "========================================"
 	@for target in $(COMPARE_TARGETS); do \
 		echo ""; \
 		echo "--- $$target ---"; \
 		if [ -f $(BUILD_DIR)/$$target ]; then \
 			echo "Running NCU on $$target..."; \
-			PROFILE_MODE=1 ncu --metrics $(NCU_METRICS) $(BUILD_DIR)/$$target | grep -E "^\s+(dram__|gpu__|l1tex__|launch__|sm__|smsp__)" | grep -v "n/a" | awk 'BEGIN{kernel=1} {if(NR>1 && (NR-1)%8==0) {print "  [Kernel " ++kernel "]"} print $$0} END{if(NR>8) print ""}'; \
+			ncu --metrics $(NCU_METRICS) $(BUILD_DIR)/$$target | grep -E "^\s+(dram__|gpu__|l1tex__|launch__|sm__|smsp__)" | grep -v "n/a" | awk 'BEGIN{kernel=1} {if(NR>1 && (NR-1)%8==0) {print "  [Kernel " ++kernel "]"} print $$0} END{if(NR>8) print ""}'; \
 		else \
 			echo "Target $$target not built. Run: make $$target"; \
 		fi; \
@@ -225,13 +212,8 @@ help:
 	@echo ""
 	@echo "Examples:"
 	@echo "  make debug v1-global-interleaved     # Build v1 in debug mode"
-	@echo "  make metrics-v4-shared-sequential    # Get full metrics (profile mode)"
-	@echo "  make profile-v4-shared-sequential    # Run single large test"
-	@echo "  make compare COMPARE_TARGETS=\"v3b-shared-interleaved-strided v4-shared-sequential\""
-	@echo ""
-	@echo "Profile Mode Configuration:"
-	@echo "  Default size: 64M elements (256 MB)"
-	@echo "  Custom size:  PROFILE_SIZE=134217728 make metrics-v4-shared-sequential"
+	@echo "  make metrics-v1-global-interleaved   # Get full metrics for v1"
+	@echo "  make nocache test-v1-global-interleaved  # Build and test v1 without L1 cache"
+	@echo "  make compare COMPARE_TARGETS=\"v1-global-interleaved v2-global-sequential\""
 
-.PHONY: default debug nocache production clean test help list list-reports compare metrics-% profile-ncu-% profile-nsys-% test-% profile-% profile-size-%
-
+.PHONY: default debug nocache production clean test help list list-reports compare metrics-% profile-ncu-% profile-nsys-% test-%

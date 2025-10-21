@@ -28,12 +28,14 @@ __global__ void reduce_in_place(float* g_input, int n) {
     // V4: if (tid < stride)           ← Cheap comparison + fewer bank conflicts
     
     for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        __syncthreads();
 
         if (tid < stride) {
             // Add element 'stride' away
             sdata[tid] += sdata[tid + stride];
         }
+
+    __syncthreads();
+    
     }
     
     // ========================================================================
