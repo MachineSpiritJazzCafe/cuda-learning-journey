@@ -3,8 +3,8 @@
 // v3: Shared Memory + Interleaved Addressing (V1 progression)
 // Lesson learned: Just adding shared memory doesn't magically improves metrics.
 // STILL HAS: Expensive modulo operation and branch divergence
-// Interleaved implementation causes bank conflicts in shared memory
-__global__ void reduce_in_place(float* g_input, int n) {
+// Inte leaved implementation causes bank conflicts in shared memory
+__global__ void reduce_in_place(float* input, int n) {
     
     // Shared memory: ~5 cycle latency vs ~400-800 for global memory
     extern __shared__ float sdata[];
@@ -20,7 +20,7 @@ __global__ void reduce_in_place(float* g_input, int n) {
     
     sdata[tid] = 0.0f;  // Initialize (handles partial blocks)
     if (index < n) {
-        sdata[tid] = g_input[index];
+        sdata[tid] = input[index];
     }
     __syncthreads();  // Ensure all threads have loaded their data
     
@@ -31,8 +31,7 @@ __global__ void reduce_in_place(float* g_input, int n) {
     // Same interleaved pattern as v1, but now operating on sdata[] not global
     
     for (unsigned int stride = 1; stride < blockDim.x; stride *= 2) {
-        __syncthreads();
-
+       
         // INTERLEAVED ADDRESSING (same as v1):
         // Active threads: 0, 2, 4, 6, ... (scattered)
         if (tid % (2 * stride) == 0 && tid + stride < blockDim.x) {
@@ -40,6 +39,9 @@ __global__ void reduce_in_place(float* g_input, int n) {
             // Add element 'stride' away
             sdata[tid] += sdata[tid + stride];
         }
+
+     __syncthreads();
+   
     }
     
     // ========================================================================
@@ -48,7 +50,7 @@ __global__ void reduce_in_place(float* g_input, int n) {
     // Only thread 0 has the final sum in sdata[0]
     
     if (tid == 0) {
-        g_input[blockIdx.x] = sdata[0];
+        input[blockIdx.x] = sdata[0];
     }
 }
 
@@ -56,4 +58,3 @@ int main() {
     run_reduction_tests("v3: Shared Memory + Interleaved Addressing");
     return 0;
 }
-
