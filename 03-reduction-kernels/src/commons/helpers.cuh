@@ -20,12 +20,12 @@ inline float cpu_reduce(float* data, int n) {
 
 
 // ============================================================================
-// Host function: Reduce entire Array using gpu kernel only
+// Host function: Reduce entire Array using gpu kernel
 // ============================================================================
-inline float naiveReduceGPU(float* d_input, int n, int blockSize) {
+inline float reduce(float* d_input, int n, int blockSize) {
    
      printf("\n=== Strategy: Multi-Stage GPU Reduction ===\n");
-    
+
     int currentSize = n;
     int stage = 0;
     
@@ -57,78 +57,6 @@ inline float naiveReduceGPU(float* d_input, int n, int blockSize) {
     
     printf("  Total stages: %d\n", stage + 1);
     printf("  Data transfer: 4 bytes (1 float)\n");
-    return result;
-}
-
-
-// ============================================================================
-// Host function: Reduce using gpu and cpu to reduce 
-// Do bulk work on GPU, finish small remainder on CPU
-// Good when: Few blocks left, minimize kernel launches, CPU available
-// ============================================================================
-inline float naiveReduceHybrid(float* d_input, int n, int blockSize) {
-    
-    printf("\n=== Strategy: Hybrid GPU+CPU Reduction ===\n");
-    
-    int numBlocks = (n + blockSize - 1) / blockSize;
-    
-    printf("  GPU stage: %d elements → %d blocks\n", n, numBlocks);
-    
-    // Single GPU reduction
-    reduce_in_place<<<numBlocks, blockSize, blockSize * sizeof(float)>>>(d_input, n);
-    CUDA_CHECK(cudaGetLastError());
-    CUDA_CHECK(cudaDeviceSynchronize());
-    
-    // Copy back partial sums
-    float* h_partial = new float[numBlocks];
-    size_t transferBytes = numBlocks * sizeof(float);
-    
-    CUDA_CHECK(cudaMemcpy(h_partial, d_input, transferBytes, 
-                         cudaMemcpyDeviceToHost));
-    
-    // Finish on CPU
-    printf("  CPU stage: %d partial sums\n", numBlocks);
-    float result = cpu_reduce(h_partial, numBlocks);
-    
-    printf("  Total stages: 2 (1 GPU + 1 CPU)\n");
-    printf("  Data transfer: %zu bytes (%d floats)\n", 
-           transferBytes, numBlocks);
-    
-    delete[] h_partial;
-    return result;
-}
-
-// ============================================================================
-// Automatically choose best strategy based on problem size
-// ============================================================================
-inline float smartReduce(float* d_input, int n, int blockSize) {
-    
-    // Calculate how many blocks we'd need
-    int numBlocks = (n + blockSize - 1) / blockSize;
-    
-    // If we have more than this many blocks, use multi-stage GPU
-    // otherwise, use hybrid GPU+CPU
-    const int THRESHOLD = 128;
-    
-    float result;
-    
-    if (numBlocks > THRESHOLD) {
-        // Large problem: Multiple GPU reductions
-        printf("\nDecision: MULTI-STAGE GPU (numBlocks=%d > threshold=%d)\n", 
-               numBlocks, THRESHOLD);
-        printf("Reason: Many blocks → minimize data transfer, keep GPU busy\n");
-        
-        result = naiveReduceGPU (d_input, n, blockSize);
-        
-    } else {
-        // Small problem: Single GPU reduction + CPU finish
-        printf("\nDecision: HYBRID GPU+CPU (numBlocks=%d <= threshold=%d)\n", 
-               numBlocks, THRESHOLD);
-        printf("Reason: Few blocks → avoid launch overhead, CPU finish is fast\n");
-        
-        result = naiveReduceHybrid(d_input, n, blockSize);
-    }
-    
     return result;
 }
 
@@ -180,7 +108,7 @@ inline void run_reduction_tests(const char* kernel_name, int blockSize = 256) {
         CUDA_CHECK(cudaMemcpy(d_input, h_input, bytes, cudaMemcpyHostToDevice));
         
         // Run reduction (no timing - NCU will time)
-        float gpu_result = smartReduce(d_input, n, blockSize);
+        float gpu_result = reduce(d_input, n, blockSize);
         
         // Verify
         float expected = (float)n;
@@ -238,7 +166,7 @@ inline void run_reduction_tests(const char* kernel_name, int blockSize = 256) {
             
             // Time the reduction
             CUDA_CHECK(cudaEventRecord(start));
-            float gpu_result = smartReduce(d_input, n, blockSize);
+            float gpu_result = reduce(d_input, n, blockSize);
             CUDA_CHECK(cudaEventRecord(stop));
             CUDA_CHECK(cudaEventSynchronize(stop));
             
