@@ -22,16 +22,16 @@ inline float cpu_reduce(float* data, int n) {
 // ============================================================================
 // Host function: Reduce entire Array using gpu kernel
 // ============================================================================
-inline float reduce(float* d_input, int n, int blockSize) {
+inline float reduce(float* d_input, int n, int blockSize, int elementsPerThread) {
    
      printf("\n=== Strategy: Multi-Stage GPU Reduction ===\n");
 
     int currentSize = n;
     int stage = 0;
-    
+    int elementsPerBlock = blockSize * elementsPerThread; 
     // Keep reducing until we can fit in one block
     while (currentSize > blockSize) {
-        int numBlocks = (currentSize + blockSize - 1) / blockSize;
+        int numBlocks = (currentSize + elementsPerBlock - 1) / elementsPerBlock;
         
         printf("  Stage %d: %d elements → %d blocks\n", 
                stage, currentSize, numBlocks);
@@ -82,7 +82,8 @@ inline int get_profile_size() {
 // - Normal: Multiple test sizes for validation
 // - Profile: Single large test for clean NCU profiling
 // ============================================================================
-inline void run_reduction_tests(const char* kernel_name, int blockSize = 256) {
+inline void run_reduction_tests(const char* kernel_name, int blockSize = 256,
+                                int elementsPerThread = 1) {
     
     if (is_profile_mode()) {
         // ========================================================================
@@ -108,7 +109,7 @@ inline void run_reduction_tests(const char* kernel_name, int blockSize = 256) {
         CUDA_CHECK(cudaMemcpy(d_input, h_input, bytes, cudaMemcpyHostToDevice));
         
         // Run reduction (no timing - NCU will time)
-        float gpu_result = reduce(d_input, n, blockSize);
+        float gpu_result = reduce(d_input, n, blockSize, elementsPerThread);
         
         // Verify
         float expected = (float)n;
@@ -166,7 +167,7 @@ inline void run_reduction_tests(const char* kernel_name, int blockSize = 256) {
             
             // Time the reduction
             CUDA_CHECK(cudaEventRecord(start));
-            float gpu_result = reduce(d_input, n, blockSize);
+            float gpu_result = reduce(d_input, n, blockSize, elementsPerThread);
             CUDA_CHECK(cudaEventRecord(stop));
             CUDA_CHECK(cudaEventSynchronize(stop));
             
